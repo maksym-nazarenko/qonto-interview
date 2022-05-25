@@ -1,0 +1,96 @@
+package main
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"log"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
+	"github.com/maxim-nazarenko/qonto-interview/internal/qonto"
+	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/app"
+	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/storage"
+	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/utils"
+)
+
+func main() {
+	if err := run(os.Args[1:]); err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
+	os.Exit(0)
+}
+
+func run(args []string) error {
+	appCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	appLogger := qonto.NewInstanceLogger(os.Stdout, "Qonto")
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt, syscall.SIGQUIT, syscall.SIGHUP, syscall.SIGTERM)
+	go func() {
+		<-signalChan
+		appLogger.Info("received interruption request, closing the app")
+		cancel()
+	}()
+
+	config, err := app.ConfigurationFromEnv(os.Getenv)
+	if err != nil {
+		return err
+	}
+
+	mysqlConfig := storage.NewMysqlConfig()
+	mysqlConfig.User = config.DB.User
+	mysqlConfig.Passwd = config.DB.Password
+	mysqlConfig.DBName = config.DB.Name
+	mysqlConfig.Net = "tcp"
+	mysqlConfig.Addr = config.DB.Address
+
+	mysqlStorage, err := storage.NewMysqlStorage(mysqlConfig)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := mysqlStorage.Close(); err != nil {
+			appLogger.Error("could not close database connection: %v", err)
+		}
+	}()
+	if err := dbConnect(appCtx, mysqlStorage, appLogger); err != nil {
+		return err
+	}
+	projectRoot := utils.ProjectRootDir()
+	if err := storage.Migrate("file://"+projectRoot+"/migrations/", mysqlStorage.DB()); err != nil {
+		return fmt.Errorf("migrations failed: %v", err)
+	}
+	appLogger.Info("migration completed")
+
+	return nil
+}
+
+func dbConnect(ctx context.Context, mysqlStorage storage.Storage, appLogger qonto.Logger) error {
+	dbPingCtx, dbPingCancel := context.WithTimeout(ctx, 10*time.Second)
+	defer dbPingCancel()
+
+	dbUpWaitFunc := func(db *sql.DB) (bool, error) {
+		for {
+			select {
+			case <-dbPingCtx.Done():
+				return false, dbPingCtx.Err()
+			case <-time.After(1 * time.Second):
+				if err := db.PingContext(dbPingCtx); err != nil {
+					appLogger.Info("db ping failed: %v", err)
+					return true, err
+				}
+				return false, nil
+			}
+		}
+	}
+	if err := mysqlStorage.Wait(dbUpWaitFunc); err != nil {
+		return err
+	}
+
+	return nil
+}
