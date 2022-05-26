@@ -43,6 +43,9 @@ func handleErrors(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, ErrMalformedInput):
 		RespondCode(w, r, http.StatusBadRequest, wrappedErr)
 	default:
-		RespondCode(w, r, http.StatusInternalServerError, wrapError(errors.New("oops...")))
+		// you should never expose wild errors in production,
+		// ideally, even previous errors must be wrapped in abstract errors
+		// without details, unless they are properly handled
+		RespondCode(w, r, http.StatusInternalServerError, wrappedErr)
 	}
 }

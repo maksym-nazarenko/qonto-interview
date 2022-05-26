@@ -33,6 +33,12 @@ func (qapi *qontoAPI) HandleTransfers(w http.ResponseWriter, r *http.Request) {
 			core.Transfer{
 				Amount:   transfer.Amount,
 				Currency: core.Currency(transfer.Currency),
+				CounterParty: core.Party{
+					Name: transfer.CounterpartyName,
+					BIC:  transfer.CounterpartyBIC,
+					IBAN: transfer.CounterpartyIBAN,
+				},
+				Description: transfer.Description,
 			})
 	}
 	if err := qapi.manager.ProcessTransfers(r.Context(), &coreRequest); err != nil {

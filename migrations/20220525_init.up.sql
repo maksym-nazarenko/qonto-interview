@@ -27,3 +27,7 @@ CREATE TABLE IF NOT EXISTS `transactions` (
     FOREIGN KEY (bank_account_id)
         REFERENCES bank_accounts (id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
+
+INSERT INTO `bank_accounts` (`organization_name`, `bic`, `iban`, `balance_cents`)
+VALUES
+    ( "ACME Corp", "OIVUSCLQXXX", "FR10474608000002006107XXXXX", 10000000);

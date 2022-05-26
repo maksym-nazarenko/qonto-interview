@@ -231,8 +231,8 @@ func (m *mysqlStorage) WithTransactionStorage(ctx context.Context, f func(contex
 		querier: tx,
 	}
 	if err := f(ctx, txMySQL); err != nil {
-		if errTx := tx.Rollback(); err != nil {
-			return fmt.Errorf("cannot rollback transaction: %v, original error: %v", errTx, err)
+		if errTx := tx.Rollback(); errTx != nil {
+			return fmt.Errorf("%w: cannot rollback transaction: %v", err, errTx)
 		}
 
 		return err
