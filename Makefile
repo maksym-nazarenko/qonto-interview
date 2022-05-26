@@ -7,6 +7,11 @@ help:
 test: # Run short, non-integrational, tests
 	@go test -race -short ./...
 
+test-integration: # Run integration tests
+	@go test -race ./...
+
+test-all: test test-integration # Run all available tests, including integration
+
 run: # Start project in background
 	${compose} up -d database
 
