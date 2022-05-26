@@ -10,8 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi"
 	"github.com/maxim-nazarenko/qonto-interview/internal/qonto"
+	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/api"
 	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/app"
+	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/core"
 	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/storage"
 	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/utils"
 )
@@ -66,6 +69,10 @@ func run(args []string) error {
 		return fmt.Errorf("migrations failed: %v", err)
 	}
 	appLogger.Info("migration completed")
+
+	qontoAPI := api.NewAPI(core.NewQontoTransferManager(mysqlStorage))
+	router := chi.NewRouter()
+	router.Post("/v1/transfers", qontoAPI.HandleTransfers)
 
 	return nil
 }

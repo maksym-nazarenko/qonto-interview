@@ -1,7 +1,10 @@
 package core
 
+import "context"
+
 type (
 	TransferManager interface {
+		ProcessTransfers(ctx context.Context, request *Request) error
 	}
 
 	Currency string
