@@ -88,8 +88,11 @@ time-based scaling of infrastructure should be done to reduce ramp time
 
 ## Time spending
 
+The time I spent could be 2-3h less, but I just can't send you incomplete solution or one that I don't like.
+
 * 1h30m initial scaffolding of the project: 
     * whiteboard design
     * local developer setup (it was taken from [another project](https://github.com/maxim-nazarenko/fiskil-lms/) that was done in ~10h)
 * 2h improving storage and write integration tests
 * 1h30m implement outer layer of API handlers
+* 1h refactoring local setup, adding more documentation
