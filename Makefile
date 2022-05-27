@@ -1,4 +1,9 @@
 
+export QONTO_DB_USER := root
+export QONTO_DB_PASSWORD := root2
+export QONTO_DB_ADDRESS := 127.0.0.1:13306
+export QONTO_DB_NAME := qonto
+
 compose = docker compose -p qonto -f docker/docker-compose.yml -f docker/docker-compose.dev.yml
 
 help:
@@ -8,11 +13,14 @@ test: # Run short, non-integrational, tests
 	@go test -race -short ./...
 
 test-integration: # Run integration tests
-	@go test -race ./...
+	${compose} up integration
 
 test-all: test test-integration # Run all available tests, including integration
 
 run: # Start project in background
+	${compose} up -d database app
+
+run-database: # Start only database container
 	${compose} up -d database
 
 mysql-enter: # Run mysql client inside database container

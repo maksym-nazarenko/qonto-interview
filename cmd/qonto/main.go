@@ -77,7 +77,7 @@ func run(args []string) error {
 	router.Post("/v1/transfers", qontoAPI.HandleTransfers)
 
 	server := http.Server{
-		Addr:         "127.0.0.1:8080",
+		Addr:         config.ListenAddress,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		Handler:      router,

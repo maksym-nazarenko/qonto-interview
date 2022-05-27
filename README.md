@@ -12,6 +12,7 @@ Configuration is done via environment variables.
 
 |Name|Type|Example|Description|
 |-|-|-|-|
+|QONTO_APP_LISTEN_ADDRESS|string|127.0.0.1:8080|Address that application will listen on|
 |QONTO_DB_NAME|string|qonto|Database name to use|
 |QONTO_DB_USER|string|root|User to access database|
 |QONTO_DB_PASSWORD|string|root|Password to access database|
@@ -31,6 +32,7 @@ down - Stop all project containers
 logs - Follow logs from all containers in the project
 mysql-enter - Run mysql client inside database container
 run - Start project in background
+run-database - Start only database container
 test - Run short, non-integrational, tests
 test-all - Run all available tests, including integration
 test-integration - Run integration tests
@@ -38,8 +40,9 @@ test-integration - Run integration tests
 
 If you prefer running/debugging code from host, you have to run at least database container using:
 ```sh
-$ make run
+$ make run-database
 ```
+
 It will run MySQL bound to `127.0.0.1:13306` by default (see [docker-compose.dev.yml](./docker/docker-compose.dev.yml))
 
 To clean the project up, run:
@@ -47,6 +50,16 @@ To clean the project up, run:
 $ make clean
 ```
 it will drop MySQL container including the data, so you can start from scratch.
+
+To run complete system, run:
+```sh
+$ make run
+```
+now the web service is available on `http://127.0.0.1:8080/v1/transfers` (see [docker-compose.dev.yml](./docker/docker-compose.dev.yml)) and you can try that out with
+
+```sh
+$ curl -x POST @sample1.json http://127.0.0.1:8080/v1/transfers
+```
 
 ## Known issues and trade-offs
 * Only credit operations are supported: the task states that transfer goes **from** Qonto account and amount in individual transfer is **always positive**

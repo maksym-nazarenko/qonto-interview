@@ -9,6 +9,13 @@ x-common: &common_config
     options:
       max-size: "10m"
       max-file: "2"
+x-service-env: &service_env
+  CGO_ENABLED: "0"
+  QONTO_DB_NAME: qonto
+  QONTO_DB_USER: root
+  QONTO_DB_PASSWORD: root
+  QONTO_DB_ADDRESS: database
+
 
 services:
   database:
@@ -17,3 +24,28 @@ services:
       MYSQL_DATABASE: qonto
       MYSQL_ROOT_PASSWORD: root
     <<: *common_config
+
+  app:
+    image: golang:alpine
+    command: ["go", "run", "/code/qonto-interview/cmd/qonto/main.go"]
+    environment:
+      <<: *service_env
+      QONTO_APP_LISTEN_ADDRESS: ":8080"
+    working_dir: "/code/qonto-interview"
+    volumes:
+      - ../:/code/qonto-interview:ro
+    <<: *common_config
+    depends_on:
+      - database
+
+  integration:
+    image: golang:alpine
+    command: ["go", "test", "./..."]
+    environment:
+      <<: *service_env
+    working_dir: "/code/qonto-interview"
+    volumes:
+      - ../:/code/qonto-interview:ro
+    <<: *common_config
+    depends_on:
+      - database
