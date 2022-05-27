@@ -5,13 +5,18 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi"
 	"github.com/maxim-nazarenko/qonto-interview/internal/qonto"
+	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/api"
 	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/app"
+	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/core"
 	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/storage"
 	"github.com/maxim-nazarenko/qonto-interview/internal/qonto/utils"
 )
@@ -67,11 +72,55 @@ func run(args []string) error {
 	}
 	appLogger.Info("migration completed")
 
+	qontoAPI := api.NewAPI(core.NewQontoTransferManager(mysqlStorage))
+	router := chi.NewRouter()
+	router.Post("/v1/transfers", qontoAPI.HandleTransfers)
+
+	server := http.Server{
+		Addr:         "127.0.0.1:8080",
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		Handler:      router,
+	}
+
+	wg := sync.WaitGroup{}
+
+	// starting HTTP server in background
+	wg.Add(1)
+	go func(srv *http.Server, logger qonto.Logger) {
+		defer wg.Done()
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error(err.Error())
+		}
+
+	}(&server, appLogger.SubLogger("http server"))
+
+	// app shutdown watcher that will stop HTTP server
+	wg.Add(1)
+	go func(ctx context.Context, srv *http.Server, logger qonto.Logger) {
+		defer wg.Done()
+		<-ctx.Done()
+
+		timeout := 10 * time.Second
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		logger.Info("trying gracefully shutdown in %v", timeout)
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			logger.Error(err.Error())
+		}
+		logger.Info("done")
+	}(appCtx, &server, appLogger.SubLogger("http server"))
+
+	wg.Wait()
+
+	appLogger.Info("all tasks stopped, exiting application")
+
 	return nil
 }
 
 func dbConnect(ctx context.Context, mysqlStorage storage.Storage, appLogger qonto.Logger) error {
-	dbPingCtx, dbPingCancel := context.WithTimeout(ctx, 10*time.Second)
+	dbPingCtx, dbPingCancel := context.WithTimeout(ctx, 30*time.Second)
 	defer dbPingCancel()
 
 	dbUpWaitFunc := func(db *sql.DB) (bool, error) {

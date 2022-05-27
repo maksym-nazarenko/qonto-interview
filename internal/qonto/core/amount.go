@@ -31,3 +31,27 @@ func ParseAmount(s string) (Amount, error) {
 
 	return Amount{Cents: int64(eurosInt)*100 + int64(centsInt)}, nil
 }
+
+func (a *Amount) MarshalJSON() ([]byte, error) {
+	euroes, cents := a.Cents/100, a.Cents%100
+	result := strconv.FormatInt(euroes, 10)
+	if cents > 0 {
+		centsStr := strconv.FormatInt(cents, 10)
+		result += "." + strings.Repeat("0", 2-len(centsStr)) + strings.TrimRight(centsStr, "0")
+	}
+	return []byte(result), nil
+}
+
+func (a *Amount) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	amount, err := ParseAmount(s)
+	if err != nil {
+		return err
+	}
+	*a = amount
+
+	return nil
+}

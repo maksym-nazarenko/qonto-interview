@@ -16,7 +16,7 @@ run: # Start project in background
 	${compose} up -d database
 
 mysql-enter: # Run mysql client inside database container
-	${compose} exec database mysql -uroot -proot
+	${compose} exec database mysql -uroot -proot qonto
 
 logs: # Follow logs from all containers in the project
 	${compose} logs -f

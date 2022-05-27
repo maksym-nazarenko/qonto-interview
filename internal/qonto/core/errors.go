@@ -7,5 +7,6 @@ func (e Error) Error() string {
 }
 
 const (
-	ErrNotEnoughFunds = Error("not enough funds")
+	ErrNotEnoughFunds  = Error("not enough funds")
+	ErrInvalidCurrency = Error("provided currency is not valid")
 )

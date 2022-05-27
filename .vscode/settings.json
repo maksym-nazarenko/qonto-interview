@@ -1,0 +1,8 @@
+{
+    "go.toolsEnvVars": {
+        "QONTO_DB_ADDRESS": "127.0.0.1:13306",
+        "QONTO_DB_NAME": "qonto",
+        "QONTO_DB_USER": "root",
+        "QONTO_DB_PASSWORD": "root"
+    }
+}
